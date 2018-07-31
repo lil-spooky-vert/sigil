@@ -26,9 +26,15 @@ SOFTWARE.
 import Collage exposing (..)
 import Collage.Layout exposing (..)
 import Collage.Render exposing (..)
+import Collage.Text exposing (fromString, shape, size, huge)
 import Color exposing (..)
 import Arithmetic exposing (..)
+import Char
+
 --import Html exposing (..)
+
+type Renderable = RenderShape Shape
+                | RenderPath Path
 
 -- from http://elm-lang.org/examples/zip
 -- (,) is a shortcut from creating tuples
@@ -52,9 +58,23 @@ padding: Collage msg-> Collage msg
 padding n =
     spacer (width n + 5) (height n + 5)
 
-renderBlack: Path -> Collage msg
-renderBlack =
-    traced <| solid thin <| uniform Color.black
+render: Renderable -> LineStyle -> Collage msg
+render r ls =
+    case r of
+        RenderPath path ->
+            traced ls path
+
+        RenderShape shape ->
+            outlined ls shape
+
+
+--renderBlack: Path -> Collage msg
+--renderBlack =
+--    traced <| solid thin <| uniform Color.black
+
+renderBlack: Renderable -> Collage msg
+renderBlack x =
+    render x <| solid thin <| uniform Color.black
 
 -- creates a polygram
 ngram : Int -> Int -> Float -> Collage msg
@@ -68,17 +88,35 @@ ngram vertices skip radius =
             List.map (\x -> (cos x * radius, sin x * radius))
             <| iterateN (vertices) (\rads -> rads + theta) (pi/2)
 
-        lines = List.map (renderBlack << uncurry segment) << zip points <| shift (skip_ * rotations) points
+        lines = List.map (renderBlack << RenderPath << uncurry segment) << zip points <| shift (skip_ * rotations) points
     in
         lines
             |> group
 
+-- ring
+ring : Float -> Float -> Collage msg
+ring radius width =
+    let
+        outer = renderBlack << RenderShape <| (circle radius)
+        inner = renderBlack << RenderShape <| (circle (radius - width))
+    in
+        outer
+            |> impose inner
+
 main =
     let
-          original = ngram 8 3 300
+          original = rotate (degrees 360/8/2) <| ngram 8 3 278
+--          original = ngram 16 4 278
+          x = ring 200 30
+          border = ngram 8 1 300
           circ = outlined (solid thin(uniform Color.red)) (circle 300)
+          text = fromString (String.fromChar (Char.fromCode 0xd83ddc37))
+                     |> size huge
+                     |> rendered
     in
         padding circ
             |> impose circ
             |> impose original
+            |> impose border
+            |> impose x
             |> svg
