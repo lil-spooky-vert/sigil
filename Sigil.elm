@@ -56,6 +56,9 @@ iterateN n func a =
     else
         a :: iterateN (n - 1) func (func a)
 
+const: a -> b -> a
+const a _ = a
+
 padding: Collage msg-> Collage msg
 padding n =
     spacer (width n + 5) (height n + 5)
