@@ -26,10 +26,12 @@ SOFTWARE.
 import Collage exposing (..)
 import Collage.Layout exposing (..)
 import Collage.Render exposing (..)
-import Collage.Text exposing (fromString, shape, size, huge)
+import Collage.Text exposing (fromString, shape, size, huge, Text)
 import Color exposing (..)
 import Arithmetic exposing (..)
 import Char
+import Random
+import List
 
 --import Html exposing (..)
 
@@ -67,11 +69,6 @@ render r ls =
         RenderShape shape ->
             outlined ls shape
 
-
---renderBlack: Path -> Collage msg
---renderBlack =
---    traced <| solid thin <| uniform Color.black
-
 renderBlack: Renderable -> Collage msg
 renderBlack x =
     render x <| solid thin <| uniform Color.black
@@ -84,10 +81,7 @@ ngram vertices skip radius =
         skip_ = skip // rotations
         theta =
             2 * pi / (toFloat vertices)
-        points =
-            List.map (\x -> (cos x * radius, sin x * radius))
-            <| iterateN (vertices) (\rads -> rads + theta) (pi/2)
-
+        points = circularPoints vertices theta radius
         lines = List.map (renderBlack << RenderPath << uncurry segment) << zip points <| shift (skip_ * rotations) points
     in
         lines
@@ -103,15 +97,22 @@ ring radius width =
         outer
             |> impose inner
 
+
+circularPoints : Int -> Float -> Float -> List Point
+circularPoints v theta r =
+    List.map (\x -> (cos x * r, sin x * r))
+    <| iterateN (v) (\rads -> rads + theta) (pi/2)
+
+
 main =
     let
           original = rotate (degrees 360/8/2) <| ngram 8 3 278
 --          original = ngram 16 4 278
           x = ring 200 30
-          border = ngram 8 1 300
+          border = ngram 9 2 300
           circ = outlined (solid thin(uniform Color.red)) (circle 300)
-          text = fromString (String.fromChar (Char.fromCode 0xd83ddc37))
-                     |> size huge
+          text = fromString "\x1F437"
+                     |> size 200
                      |> rendered
     in
         padding circ
@@ -119,4 +120,5 @@ main =
             |> impose original
             |> impose border
             |> impose x
+            |> impose text
             |> svg
