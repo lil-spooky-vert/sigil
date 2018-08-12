@@ -107,6 +107,17 @@ circularPoints v theta r =
     <| iterateN (v) (\rads -> rads + theta) (pi/2)
 
 
+boundingGlyphs : Float -> Collage msg -> List (Collage msg) -> Collage msg
+boundingGlyphs r bounds glyphs =
+    let
+        len = List.length glyphs
+        theta = 2 * pi / toFloat len
+        anchors = List.map const <| circularPoints len theta r
+    in
+        -- map2 is zipWith apparently
+        List.foldl (<|) bounds <| List.map2 at anchors glyphs
+
+
 main =
     let
           original = rotate (degrees 360/8/2) <| ngram 8 3 278
@@ -115,8 +126,10 @@ main =
           border = ngram 9 2 300
           circ = outlined (solid thin(uniform Color.red)) (circle 300)
           text = fromString "\x1F437"
-                     |> size 200
+                     |> size 30
                      |> rendered
+          pigs = List.repeat 10 text
+
     in
         padding circ
             |> impose circ
@@ -124,4 +137,5 @@ main =
             |> impose border
             |> impose x
             |> impose text
+            |> impose (boundingGlyphs 100 (spacer 200 200) pigs)
             |> svg
