@@ -32,8 +32,44 @@ import Arithmetic exposing (..)
 import Char
 import Random
 import List
+import Tuple
 
---import Html exposing (..)
+import Html exposing (..)
+import Html.Events exposing (..)
+
+
+
+-- Model
+type alias Model =
+    { pair : (Int, Int)
+    }
+-- Update
+type Msg = GetValue
+         | SetValue (Int, Int)
+
+update : Msg -> Model -> (Model, Cmd Msg)
+update msg model =
+    case msg of
+        GetValue ->
+            let
+                pair = Random.andThen (\max -> lift2nd (max, Random.int 1 (max - 1))) <| Random.int 4 300
+            in
+                (model, (Random.generate SetValue pair))
+        SetValue value ->
+            (Model value, Cmd.none)
+
+lift2nd : (a, Random.Generator b) -> Random.Generator (a, b)
+lift2nd (a, b) = Random.map ((,) a ) b
+
+
+-- View
+view : Model -> Html.Html Msg
+view model =
+    div []
+        [ svg <| ( ngram (Tuple.first model.pair) (Tuple.second model.pair) 300)
+        , button [ onClick GetValue ] [ text "randomize" ]
+        ]
+
 
 type Renderable = RenderShape Shape
                 | RenderPath Path
@@ -117,25 +153,38 @@ boundingGlyphs r bounds glyphs =
         -- map2 is zipWith apparently
         List.foldl (<|) bounds <| List.map2 at anchors glyphs
 
+init : ( Model, Cmd Msg )
+init =
+    ( Model (5,2), Cmd.none )
 
 main =
-    let
-          original = rotate (degrees 360/8/2) <| ngram 8 3 278
---          original = ngram 16 4 278
-          x = ring 200 30
-          border = ngram 9 2 300
-          circ = outlined (solid thin(uniform Color.red)) (circle 300)
-          text = fromString "\x1F437"
-                     |> size 30
-                     |> rendered
-          pigs = List.repeat 10 text
+  Html.program
+    {
+     init = init
+    , view = view
+    , update = update
+    , subscriptions = \_->Sub.none
+    }
 
-    in
-        padding circ
-            |> impose circ
-            |> impose original
-            |> impose border
-            |> impose x
-            |> impose text
-            |> impose (boundingGlyphs 100 (spacer 200 200) pigs)
-            |> svg
+
+--main =
+--    let
+--          original = rotate (degrees 360/8/2) <| ngram 8 3 278
+----          original = ngram 16 4 278
+--          x = ring 200 30
+--          border = ngram 9 2 300
+--          circ = outlined (solid thin(uniform Color.red)) (circle 300)
+--          text = fromString "X"
+--                     |> size 30
+--                     |> rendered
+--          pigs = List.repeat 10 text
+--
+--    in
+--        padding circ
+--            |> impose circ
+--            |> impose original
+--            |> impose border
+--            |> impose x
+--            |> impose text
+--            |> impose (boundingGlyphs 185 (spacer 300 300) pigs)
+--            |> svg
