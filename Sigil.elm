@@ -52,7 +52,7 @@ update msg model =
     case msg of
         GetValue ->
             let
-                pair = Random.andThen (\max -> lift2nd (max, Random.int 1 (max - 1))) <| Random.int 4 300
+                pair = Random.andThen (\max -> lift2nd (max, Random.int 1 (max - 1))) <| Random.int 3 30
             in
                 (model, (Random.generate SetValue pair))
         SetValue value ->
@@ -66,7 +66,9 @@ lift2nd (a, b) = Random.map ((,) a ) b
 view : Model -> Html.Html Msg
 view model =
     div []
-        [ svg <| ( ngram (Tuple.first model.pair) (Tuple.second model.pair) 300)
+        [ spacer 600 600
+            |> impose (ngram (Tuple.first model.pair) (Tuple.second model.pair) 300)
+            |> svg
         , button [ onClick GetValue ] [ text "randomize" ]
         ]
 
@@ -166,18 +168,20 @@ main =
     , subscriptions = \_->Sub.none
     }
 
-
+--
 --main =
 --    let
---          original = rotate (degrees 360/8/2) <| ngram 8 3 278
+--          original = rotate (degrees 360/8/2) <| ngram 8 3 270
 ----          original = ngram 16 4 278
---          x = ring 200 30
+--          x = ring 300 30
 --          border = ngram 9 2 300
 --          circ = outlined (solid thin(uniform Color.red)) (circle 300)
---          text = fromString "X"
---                     |> size 30
+--          text = fromString "💯"
+--                     |> size 90
 --                     |> rendered
 --          pigs = List.repeat 10 text
+--          pentas = List.repeat 8 (ngram 7 2 30)
+--
 --
 --    in
 --        padding circ
@@ -186,5 +190,5 @@ main =
 --            |> impose border
 --            |> impose x
 --            |> impose text
---            |> impose (boundingGlyphs 185 (spacer 300 300) pigs)
+--            |> impose (rotate (degrees 360/8/2) (boundingGlyphs 175 (spacer 300 300) pentas))
 --            |> svg
