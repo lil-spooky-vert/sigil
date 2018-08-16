@@ -41,25 +41,46 @@ import Html.Events exposing (..)
 
 -- Model
 type alias Model =
-    { pair : (Int, Int)
+    { collage : Collage Msg
     }
 -- Update
 type Msg = GetValue
-         | SetValue (Int, Int)
+         | SetValue (Collage Msg)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         GetValue ->
-            let
-                pair = Random.andThen (\max -> lift2nd (max, Random.int 1 (max - 1))) <| Random.int 3 30
-            in
-                (model, (Random.generate SetValue pair))
+            (model, Random.generate SetValue <| Random.map Tuple.second (genNestedCollage 300))
         SetValue value ->
             (Model value, Cmd.none)
 
+
 lift2nd : (a, Random.Generator b) -> Random.Generator (a, b)
 lift2nd (a, b) = Random.map ((,) a ) b
+
+genNGram : Float -> Random.Generator (Collage msg)
+genNGram r =
+    let
+        gen = Random.andThen (\max -> lift2nd (max, Random.int 1 (max - 1))) <| Random.int 3 30
+
+    in
+        Random.map (\(sides, skip) -> ngram sides skip r) gen
+
+pure : a -> Random.Generator a
+pure a =
+    -- second arg doesn't actually matter this is just fast to type
+    Random.map (const a) Random.bool
+
+genNestedCollage : Float -> Random.Generator (Float, Collage msg)
+genNestedCollage r =
+    if r < 10 then
+        pure (0, empty)
+    else
+        let
+            gen = Random.andThen(\ngram -> Random.map(\(innerR, nested) -> impose nested ngram) <| genNestedCollage (r-50)) <| genNGram r
+        in
+            lift2nd (r-50, gen)
 
 
 -- View
@@ -67,7 +88,7 @@ view : Model -> Html.Html Msg
 view model =
     div []
         [ spacer 600 600
-            |> impose (ngram (Tuple.first model.pair) (Tuple.second model.pair) 300)
+            |> impose model.collage
             |> svg
         , button [ onClick GetValue ] [ text "randomize" ]
         ]
@@ -153,12 +174,13 @@ boundingGlyphs r bounds glyphs =
         anchors = List.map const <| circularPoints len theta r
     in
         -- map2 is zipWith apparently
+        -- at anchor glyphs : Collage msg -> Collage msg
         List.foldl (<|) bounds <| List.map2 at anchors glyphs
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model (5,2), Cmd.none )
-
+    ( Model (ngram 5 2 300), Cmd.none )
+--
 main =
   Html.program
     {
